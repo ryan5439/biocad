@@ -226,16 +226,8 @@ export function OrganismPreview({ compact = false }: { compact?: boolean }) {
     scene.fog = new THREE.FogExp2(0x0a1218, 0.018)
 
     const camera = new THREE.PerspectiveCamera(32, w / h, 0.1, 100)
-    
-    // Species-specific camera positioning for proper framing
-    const isQuadruped = species.silhouette === 'quadruped'
-    if (isQuadruped) {
-      // Quadrupeds (dogs, cats, etc.) are horizontal - need different framing
-      camera.position.set(0.1, compact ? 1.2 : 1.0, compact ? 5.8 : 5.2)
-    } else {
-      // Humanoids and others - vertical orientation
-      camera.position.set(0, compact ? 1.35 : 1.15, compact ? 6.2 : 4.4)
-    }
+    // Initial position - will be updated after mesh build
+    camera.position.set(0, 1, 5)
 
     const dprCap = compact || w < 400 ? 1.25 : 1.5
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' })
@@ -263,17 +255,9 @@ export function OrganismPreview({ compact = false }: { compact?: boolean }) {
     controls.dampingFactor = 0.08
     controls.enablePan = true
     controls.enableZoom = true
-    controls.minDistance = 1.2
-    controls.maxDistance = 12
-    
-    // Species-specific target for proper centering
-    if (isQuadruped) {
-      // Center on dog body (horizontally oriented, body spans x=-0.4 to x=0.4 roughly)
-      controls.target.set(0.05, 0.1, 0)
-    } else {
-      // Center on humanoid torso
-      controls.target.set(0, 0.15, 0)
-    }
+    controls.minDistance = 0.5
+    controls.maxDistance = 20
+    controls.target.set(0, 0, 0)
     controls.update()
 
     // Soft studio lighting: hemisphere + key + rim + fill
@@ -959,6 +943,13 @@ export function OrganismPreview({ compact = false }: { compact?: boolean }) {
       parts.body = fallback
     }
 
+    // Initial frame after mesh build
+    requestAnimationFrame(() => {
+      autoFrameCamera()
+      // Force a render to ensure the canvas isn't blank
+      renderer.render(scene, camera)
+    })
+
     // Optional remote GLTF (best-effort; never blocks procedural)
     let gltfRoot: THREE.Object3D | null = null
     if (isDog || isCat) {
@@ -989,6 +980,78 @@ export function OrganismPreview({ compact = false }: { compact?: boolean }) {
     let tabVisible = typeof document !== 'undefined' ? document.visibilityState === 'visible' : true
     let onscreen = true
     let looping = false
+
+    /**
+     * Auto-frame camera to fit organism in viewport with proper orientation
+     * Call after mesh build and after phenotype changes that alter scale
+     */
+    const autoFrameCamera = () => {
+      try {
+        // Compute bounding box of entire organism
+        const box = new THREE.Box3().setFromObject(root)
+        if (box.isEmpty()) return
+        
+        const center = box.getCenter(new THREE.Vector3())
+        const size = box.getSize(new THREE.Vector3())
+        
+        // Target the center of the organism
+        controls.target.copy(center)
+        
+        // Get current viewport dimensions
+        const aspect = camera.aspect
+        const vFOV = (camera.fov * Math.PI) / 180
+        
+        // Determine ideal viewing angle based on species silhouette
+        const isQuadruped = species.silhouette === 'quadruped'
+        const isAquatic = species.silhouette === 'aquatic'
+        const isAvian = species.silhouette === 'avian'
+        
+        // Calculate distance needed to fit object (use smaller dimension for tighter framing)
+        const fitHeightDistance = size.y / (2 * Math.tan(vFOV / 2))
+        const fitWidthDistance = size.x / (2 * Math.tan(vFOV / 2) * aspect)
+        const fitDepthDistance = size.z / (2 * Math.tan(vFOV / 2) * aspect)
+        
+        // Use maximum distance to ensure everything fits, with 1.4x padding
+        let distance = Math.max(fitHeightDistance, fitWidthDistance, fitDepthDistance) * 1.4
+        
+        // Ensure minimum distance for very small organisms
+        distance = Math.max(distance, 1.5)
+        
+        // Position camera based on species type for best viewing angle
+        if (isQuadruped || isAquatic) {
+          // Quadrupeds and aquatic: 3/4 front-right view (not pure side)
+          const angle = Math.PI / 5 // 36 degrees from front
+          const elevation = size.y * 0.2 // Slightly elevated
+          camera.position.set(
+            center.x + Math.sin(angle) * distance,
+            center.y + elevation,
+            center.z + Math.cos(angle) * distance
+          )
+        } else if (isAvian) {
+          // Birds: slightly elevated front view
+          camera.position.set(
+            center.x + distance * 0.3,
+            center.y + size.y * 0.3,
+            center.z + distance
+          )
+        } else {
+          // Humanoids and others: front view, slightly elevated
+          camera.position.set(
+            center.x,
+            center.y + size.y * 0.15,
+            center.z + distance
+          )
+        }
+        
+        // Update min/max distances based on model size
+        controls.minDistance = distance * 0.3
+        controls.maxDistance = distance * 3
+        
+        controls.update()
+      } catch (err) {
+        console.warn('Auto-frame camera failed:', err)
+      }
+    }
 
     const applyPhenotype = () => {
       try {
@@ -1047,7 +1110,14 @@ export function OrganismPreview({ compact = false }: { compact?: boolean }) {
       // Height slider: human mid (~52) ≈ 5'10" vs fixed 6 ft ruler; others unchanged range
       const s =
         sil === 'humanoid' ? n(ph.height, 0.82, 1.18) : n(ph.height, 0.72, 1.28)
+      const prevScale = root.scale.x
       root.scale.set(s, s, s)
+      
+      // Reframe camera if scale changed significantly
+      if (Math.abs(s - prevScale) > 0.05) {
+        autoFrameCamera()
+      }
+      
       // Keep ruler world-scale readable: counter-scale so it stays true 6 ft
       const ruler = parts.ruler as THREE.Object3D | undefined
       if (ruler && sil === 'humanoid' && s > 0.01) {
@@ -1352,7 +1422,11 @@ export function OrganismPreview({ compact = false }: { compact?: boolean }) {
           /* keep last frame */
         }
       }
-      root.rotation.y = Math.sin(frame * 0.004) * 0.12
+      // Gentle oscillation - quadrupeds get more rotation for better viewing
+      const isQuadruped = species.silhouette === 'quadruped'
+      const oscillation = Math.sin(frame * 0.004) * 0.12
+      root.rotation.y = isQuadruped ? Math.PI / 6 + oscillation : oscillation
+      
       controls.update()
       renderer.render(scene, camera)
     }
@@ -1401,13 +1475,21 @@ export function OrganismPreview({ compact = false }: { compact?: boolean }) {
       const cap = compact || nw < 400 ? 1.25 : 1.5
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, cap))
       renderer.setSize(nw, nh)
+      
+      // Reframe after resize to adapt to new aspect ratio
+      autoFrameCamera()
+      
+      // Force render to ensure non-blank canvas
+      renderer.render(scene, camera)
     }
     window.addEventListener('resize', onResize)
     const ro = new ResizeObserver(() => onResize())
     ro.observe(mount)
+    // Multiple timing options to catch initial layout
     requestAnimationFrame(() => onResize())
     setTimeout(onResize, 50)
     setTimeout(onResize, 250)
+    setTimeout(onResize, 500)
 
     return () => {
       stopLoop()
