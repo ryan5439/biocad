@@ -263,6 +263,7 @@ export function SequenceEditor({
   const [editedPositions, setEditedPositions] = useState<Set<number>>(new Set())
   const [colorWarning, setColorWarning] = useState<string>()
   const [targetColor, setTargetColor] = useState<string | null>(null)
+  const [colorInputText, setColorInputText] = useState('')
   const taRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
@@ -280,6 +281,7 @@ export function SequenceEditor({
     setEditedPositions(new Set())
     setColorWarning(undefined)
     setTargetColor(null)
+    setColorInputText('')
   }, [open, initialSequence, title])
 
   useEffect(() => {
@@ -435,6 +437,13 @@ export function SequenceEditor({
   const computedColor = useMemo(() => sequenceToColor(seq, traitType), [seq, traitType])
   const resultingColor = targetColor || computedColor
   const colorName = useMemo(() => getColorName(resultingColor), [resultingColor])
+  
+  // Sync color input text with resulting color when it changes (but not during user typing)
+  useEffect(() => {
+    if (!colorInputText) {
+      setColorInputText(resultingColor)
+    }
+  }, [resultingColor, colorInputText])
   
   // Handle color-to-DNA editing
   const handleColorChange = useCallback((newColor: string) => {
@@ -719,15 +728,20 @@ export function SequenceEditor({
                       />
                       <input
                         type="text"
-                        value={resultingColor}
+                        value={colorInputText || resultingColor}
                         onChange={(e) => {
-                          if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value) || e.target.value.startsWith('hsl')) {
-                            handleColorChange(e.target.value)
+                          const val = e.target.value
+                          setColorInputText(val)
+                          // Apply immediately if valid
+                          if (/^#[0-9A-Fa-f]{6}$/.test(val) || val.startsWith('hsl(')) {
+                            handleColorChange(val)
+                            setColorInputText('')
                           }
                         }}
+                        onBlur={() => setColorInputText('')}
                         className="flex-1 rounded border border-bio-border bg-black/40 px-2 py-1 font-mono text-[10px] text-cyan-200 outline-none focus:border-cyan-400/50"
                         placeholder="Hex (#rrggbb)"
-                        title="Color from genetics"
+                        title="Type hex or hsl to edit color"
                       />
                     </div>
                   </div>
@@ -759,15 +773,20 @@ export function SequenceEditor({
                       />
                       <input
                         type="text"
-                        value={resultingColor}
+                        value={colorInputText || resultingColor}
                         onChange={(e) => {
-                          if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value) || e.target.value.startsWith('hsl')) {
-                            handleColorChange(e.target.value)
+                          const val = e.target.value
+                          setColorInputText(val)
+                          // Apply immediately if valid
+                          if (/^#[0-9A-Fa-f]{6}$/.test(val) || val.startsWith('hsl(')) {
+                            handleColorChange(val)
+                            setColorInputText('')
                           }
                         }}
+                        onBlur={() => setColorInputText('')}
                         className="flex-1 rounded border border-bio-border bg-black/40 px-2 py-1 font-mono text-[10px] text-cyan-200 outline-none focus:border-cyan-400/50"
                         placeholder="Hex (#rrggbb)"
-                        title="Color from genetics"
+                        title="Type hex or hsl to edit color"
                       />
                     </div>
                   </div>
@@ -803,15 +822,20 @@ export function SequenceEditor({
                       />
                       <input
                         type="text"
-                        value={resultingColor}
+                        value={colorInputText || resultingColor}
                         onChange={(e) => {
-                          if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value) || e.target.value.startsWith('hsl')) {
-                            handleColorChange(e.target.value)
+                          const val = e.target.value
+                          setColorInputText(val)
+                          // Apply immediately if valid
+                          if (/^#[0-9A-Fa-f]{6}$/.test(val) || val.startsWith('hsl(')) {
+                            handleColorChange(val)
+                            setColorInputText('')
                           }
                         }}
+                        onBlur={() => setColorInputText('')}
                         className="flex-1 rounded border border-bio-border bg-black/40 px-2 py-1 font-mono text-[10px] text-cyan-200 outline-none focus:border-cyan-400/50"
                         placeholder="Hex (#rrggbb)"
-                        title="Color from genetics"
+                        title="Type hex or hsl to edit color"
                       />
                     </div>
                   </div>

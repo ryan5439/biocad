@@ -836,8 +836,8 @@ export function PhenotypeModule() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-4">
-          <div className="min-h-[320px] flex-1">
+        <div className="flex flex-col gap-4 lg:sticky lg:top-2 lg:self-start">
+          <div className="h-[min(68vh,640px)] min-h-[320px] w-full">
             <OrganismPreview />
           </div>
           <div className="glass rounded-xl p-4">
