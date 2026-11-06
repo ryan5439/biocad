@@ -226,7 +226,16 @@ export function OrganismPreview({ compact = false }: { compact?: boolean }) {
     scene.fog = new THREE.FogExp2(0x0a1218, 0.018)
 
     const camera = new THREE.PerspectiveCamera(32, w / h, 0.1, 100)
-    camera.position.set(0, compact ? 1.35 : 1.15, compact ? 6.2 : 4.4)
+    
+    // Species-specific camera positioning for proper framing
+    const isQuadruped = species.silhouette === 'quadruped'
+    if (isQuadruped) {
+      // Quadrupeds (dogs, cats, etc.) are horizontal - need different framing
+      camera.position.set(0.1, compact ? 1.2 : 1.0, compact ? 5.8 : 5.2)
+    } else {
+      // Humanoids and others - vertical orientation
+      camera.position.set(0, compact ? 1.35 : 1.15, compact ? 6.2 : 4.4)
+    }
 
     const dprCap = compact || w < 400 ? 1.25 : 1.5
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' })
@@ -256,7 +265,15 @@ export function OrganismPreview({ compact = false }: { compact?: boolean }) {
     controls.enableZoom = true
     controls.minDistance = 1.2
     controls.maxDistance = 12
-    controls.target.set(0, 0.15, 0)
+    
+    // Species-specific target for proper centering
+    if (isQuadruped) {
+      // Center on dog body (horizontally oriented, body spans x=-0.4 to x=0.4 roughly)
+      controls.target.set(0.05, 0.1, 0)
+    } else {
+      // Center on humanoid torso
+      controls.target.set(0, 0.15, 0)
+    }
     controls.update()
 
     // Soft studio lighting: hemisphere + key + rim + fill
