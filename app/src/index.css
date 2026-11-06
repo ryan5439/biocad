@@ -1,0 +1,237 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "IBM Plex Sans", "Inter", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", "JetBrains Mono", ui-monospace, monospace;
+  --color-bio-bg: #030507;
+  --color-bio-panel: #070b10;
+  --color-bio-card: #0a1016;
+  --color-bio-border: #1c2a38;
+  --color-bio-cyan: #3ecfbf;
+  --color-bio-green: #5ecf8a;
+  --color-bio-magenta: #7eb8c8;
+  --color-bio-amber: #d4a84b;
+  --color-bio-red: #e07070;
+  --color-bio-muted: #6b7c8d;
+  --color-bio-text: #d7e0ea;
+  --color-bio-dim: #8fa0b0;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  margin: 0;
+  min-height: 100%;
+  height: 100%;
+  width: 100%;
+  background: var(--color-bio-bg);
+  color: var(--color-bio-text);
+  font-family: var(--font-sans);
+}
+
+body {
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, #05080c 0%, #030507 100%);
+}
+
+/* Thick, grab-friendly scrollbars for dense lab panels */
+* {
+  scrollbar-width: auto; /* Firefox — thicker than thin */
+  scrollbar-color: #5a7a8a #0c1218;
+}
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track {
+  background: #0c1218;
+  border-left: 1px solid #1c2a38;
+}
+::-webkit-scrollbar-thumb {
+  background: #4a6578;
+  border: 2px solid #0c1218;
+  border-radius: 2px;
+  min-height: 40px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3ecfbf;
+}
+::-webkit-scrollbar-thumb:active {
+  background: #7ee0d4;
+}
+::-webkit-scrollbar-corner { background: #0c1218; }
+
+/* Dense technical panels — not bubbly glass */
+.glass,
+.instrument-panel {
+  background: rgba(8, 12, 18, 0.92);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(62, 207, 191, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(180, 230, 255, 0.04),
+    0 0 0 1px rgba(0, 0, 0, 0.35);
+  border-radius: 2px;
+}
+
+.glass-strong {
+  background: rgba(6, 10, 14, 0.96);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(62, 207, 191, 0.22);
+  box-shadow: inset 0 1px 0 rgba(180, 230, 255, 0.05);
+  border-radius: 2px;
+}
+
+.neon-text {
+  text-shadow: none;
+  letter-spacing: 0.08em;
+}
+
+.neon-border {
+  box-shadow: 0 0 0 1px rgba(62, 207, 191, 0.28);
+}
+
+.slider-bio {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  border-radius: 0;
+  background: linear-gradient(90deg, #15202a, #3ecfbf55);
+  outline: none;
+}
+.slider-bio::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 11px;
+  height: 11px;
+  border-radius: 1px;
+  background: #3ecfbf;
+  box-shadow: 0 0 0 1px #030507;
+  cursor: pointer;
+  border: none;
+}
+
+.module-enter {
+  animation: fade-up 0.2s ease-out;
+}
+@keyframes fade-up {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Tighten common rounded chrome toward instrument look */
+.rounded-xl { border-radius: 2px !important; }
+.rounded-lg { border-radius: 2px !important; }
+.rounded-md { border-radius: 1px !important; }
+.rounded-full { border-radius: 2px !important; }
+
+
+.chip-instrument {
+  border: 1px solid rgba(62, 207, 191, 0.2);
+  background: #0a1016;
+  color: #8fa0b0;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 1px;
+  box-shadow: none;
+}
+
+.nav-rail-active {
+  box-shadow: inset 2px 0 0 #3ecfbf;
+  background: rgba(62, 207, 191, 0.06);
+}
+
+
+/* DNA print letter stream — pop/glow each base as it prints */
+@keyframes base-print-pop {
+  0% {
+    transform: scale(0.35) translateY(6px);
+    opacity: 0;
+    filter: blur(2px);
+    text-shadow: 0 0 16px currentColor;
+  }
+  55% {
+    transform: scale(1.35) translateY(-2px);
+    opacity: 1;
+    filter: blur(0);
+    text-shadow: 0 0 14px currentColor, 0 0 28px currentColor;
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+    filter: blur(0);
+    text-shadow: 0 0 6px currentColor;
+  }
+}
+.base-print-in {
+  display: inline-block;
+  animation: base-print-pop 0.55s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+.base-print-A { color: #3ecfbf; }
+.base-print-T { color: #5ecf8a; }
+.base-print-G { color: #d4a84b; }
+.base-print-C { color: #7eb8c8; }
+
+
+/* Lab instrument micro-interactions */
+@keyframes panel-enter {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.panel-enter { animation: panel-enter 0.22s ease-out; }
+
+@keyframes btn-press {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.97); }
+  100% { transform: scale(1); }
+}
+.btn-press:active { animation: btn-press 0.15s ease-out; }
+
+@keyframes finding-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.35); opacity: 1; }
+  50% { box-shadow: 0 0 10px 2px rgba(248, 113, 113, 0.45); opacity: 0.92; }
+}
+.finding-pulse { animation: finding-pulse 1.4s ease-in-out infinite; }
+
+@keyframes scan-sweep {
+  0% { transform: translateY(-120%); }
+  100% { transform: translateY(420%); }
+}
+.scan-sweep { animation: scan-sweep 1.6s linear infinite; }
+
+@keyframes scan-bar {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+.scan-bar { animation: scan-bar 1.2s ease-in-out infinite; }
+
+.cta-glow {
+  box-shadow: 0 0 12px rgba(62, 207, 191, 0.18), inset 0 1px 0 rgba(180, 230, 255, 0.08);
+}
+.cta-glow:hover {
+  box-shadow: 0 0 18px rgba(62, 207, 191, 0.28), inset 0 1px 0 rgba(180, 230, 255, 0.1);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 1px solid rgba(62, 207, 191, 0.65);
+  outline-offset: 2px;
+}
+
+.nav-rail-btn {
+  transition: background 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
+}
+.nav-rail-btn:hover:not(.nav-rail-active) {
+  background: rgba(62, 207, 191, 0.05);
+  box-shadow: inset 2px 0 0 rgba(62, 207, 191, 0.25);
+}
+
+.species-card {
+  transition: border-color 0.12s ease, transform 0.12s ease, background 0.12s ease;
+}
+.species-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(62, 207, 191, 0.45) !important;
+}
