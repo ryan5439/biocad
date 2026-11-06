@@ -27,6 +27,14 @@ export type Phenotype = {
   memory: number
   attention: number
   emotionalReg: number
+  // New species-relative traits for bell curves
+  growthRate: number
+  weight: number
+  lifespan: number
+  speed: number
+  metabolism: number
+  fertility: number
+  diseaseResistance: number
   coatColor: string
   coatLength: number
   featherColor: string
@@ -186,6 +194,14 @@ const defaultPhenotype = (s?: Species | null): Phenotype => {
   stemHeight: 55,
   leafSpan: 50,
   shellSize: 55,
+  // New species-relative traits
+  growthRate: isDog ? 65 : human ? 45 : 50,
+  weight: isDog ? 55 : human ? 50 : 50,
+  lifespan: isDog ? 40 : human ? 50 : 45,
+  speed: isDog ? 60 : human ? 45 : 50,
+  metabolism: isDog ? 55 : human ? 50 : 50,
+  fertility: isDog ? 60 : human ? 50 : 50,
+  diseaseResistance: isDog ? 50 : human ? 48 : 45,
   }
 }
 

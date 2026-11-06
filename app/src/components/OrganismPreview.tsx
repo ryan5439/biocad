@@ -1438,11 +1438,11 @@ export function OrganismPreview({ compact = false }: { compact?: boolean }) {
       <div ref={mountRef} className="absolute inset-0" />
       <div className="pointer-events-none absolute bottom-2 left-2 right-2 flex gap-1.5">
         {[
-          ['INT', p.iq],
           ['LRN', p.learning],
           ['MEM', p.memory],
           ['ATT', p.attention],
           ['EMO', p.emotionalReg],
+          ['GRW', p.growthRate],
         ].map(([k, v]) => (
           <div key={k as string} className="flex-1 border border-white/5 bg-black/50 px-1.5 py-1">
             <div className="font-mono text-[8px] text-bio-muted">{k}</div>

@@ -40,14 +40,42 @@ export function IntelligenceCurve({ value, speciesName, speciesBaseline = 50, on
   const markerY =
     height - pad - (normalPdf(value, mean, std) / maxY) * (height - pad * 2 - 8)
 
+  // Calculate percentile for display (NO numeric IQ value shown per Ryan's rule)
+  const percentile = useMemo(() => {
+    // Normal CDF approximation for percentile
+    const z = (value - mean) / std
+    const t = 1 / (1 + 0.2316419 * Math.abs(z))
+    const d = 0.3989423 * Math.exp(-z * z / 2)
+    const p =
+      d *
+      t *
+      (0.3193815 +
+        t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))))
+    const cdf = z > 0 ? 1 - p : p
+    return Math.round(cdf * 100)
+  }, [value, mean, std])
+
+  const percentileLabel =
+    percentile >= 99
+      ? '99th+ percentile'
+      : percentile <= 1
+        ? '1st percentile'
+        : percentile === 2
+          ? '2nd percentile'
+          : percentile === 3
+            ? '3rd percentile'
+            : `${percentile}th percentile`
+
   return (
     <div className="instrument-panel p-3">
       <div className="mb-1 flex items-center justify-between">
         <div className="text-xs font-semibold uppercase tracking-wider text-cyan-300/90">Intelligence</div>
-        <div className="font-mono text-[10px] text-cyan-200/80">{Math.round(value)}</div>
       </div>
-      <p className="mb-2 font-mono text-[10px] leading-snug text-bio-muted">
+      <p className="mb-1 font-mono text-[10px] leading-snug text-bio-muted">
         Relative to typical {speciesName.toLowerCase()} intelligence
+      </p>
+      <p className="mb-2 font-mono text-[10px] font-semibold text-cyan-300/90">
+        {percentileLabel} for {speciesName}
       </p>
       <svg viewBox={`0 0 ${width} ${height}`} className="w-full">
         <defs>

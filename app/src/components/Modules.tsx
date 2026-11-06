@@ -679,6 +679,68 @@ export function PhenotypeModule() {
       <div className="grid h-full gap-4 lg:grid-cols-2">
         <div className="space-y-4">
           <BreedAncestryPanel speciesId={species.id} onApply={(partial) => set(partial)} />
+          
+          {/* Physical & Biological Traits with Bell Curves */}
+          <div className="glass rounded-xl p-4">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-emerald-400/80">Physical & Biological Traits</div>
+            <TraitCurve
+              label="Growth rate"
+              value={phenotype.growthRate}
+              speciesName={species.name}
+              speciesBaseline={50}
+              onChange={(v) => set({ growthRate: v })}
+              color="#10b981"
+            />
+            <TraitCurve
+              label="Weight / mass"
+              value={phenotype.weight}
+              speciesName={species.name}
+              speciesBaseline={50}
+              onChange={(v) => set({ weight: v })}
+              color="#059669"
+            />
+            <TraitCurve
+              label="Speed / agility"
+              value={phenotype.speed}
+              speciesName={species.name}
+              speciesBaseline={50}
+              onChange={(v) => set({ speed: v })}
+              color="#34d399"
+            />
+            <TraitCurve
+              label="Metabolism"
+              value={phenotype.metabolism}
+              speciesName={species.name}
+              speciesBaseline={50}
+              onChange={(v) => set({ metabolism: v })}
+              color="#6ee7b7"
+            />
+            <TraitCurve
+              label="Lifespan"
+              value={phenotype.lifespan}
+              speciesName={species.name}
+              speciesBaseline={50}
+              onChange={(v) => set({ lifespan: v })}
+              color="#a7f3d0"
+            />
+            <TraitCurve
+              label="Fertility"
+              value={phenotype.fertility}
+              speciesName={species.name}
+              speciesBaseline={50}
+              onChange={(v) => set({ fertility: v })}
+              color="#d1fae5"
+            />
+            <TraitCurve
+              label="Disease resistance"
+              value={phenotype.diseaseResistance}
+              speciesName={species.name}
+              speciesBaseline={50}
+              onChange={(v) => set({ diseaseResistance: v })}
+              color="#6ee7b7"
+            />
+          </div>
+          
           {schema.appearance.length > 0 && (
             <div className="glass rounded-xl p-4">
               <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-cyan-400/80">Appearance</div>
@@ -820,7 +882,7 @@ export function VisualModule() {
     { id: 'skin', x: 40, y: 60, label: 'Skin pigment', v: phenotype.skin, type: 'color-seq', key: 'skin' },
     { id: 'eye', x: 200, y: 40, label: 'Eye color', v: phenotype.eyes, type: 'color-seq', key: 'eyes' },
     { id: 'hair', x: 360, y: 70, label: 'Hair', v: phenotype.hair, type: 'color-seq', key: 'hair' },
-    { id: 'intel', x: 100, y: 180, label: 'Intelligence', v: `${phenotype.iq}`, type: 'trait', key: 'iq' },
+    { id: 'intel', x: 100, y: 180, label: 'Intelligence', v: 'Relative', type: 'trait', key: 'iq' },
     { id: 'mem', x: 280, y: 200, label: 'Memory', v: `${phenotype.memory}`, type: 'trait', key: 'memory' },
     { id: 'morph', x: 180, y: 300, label: 'Morphology', v: `H${phenotype.height}`, type: 'trait', key: 'height' },
   ]
@@ -1076,7 +1138,7 @@ export function SimulationModule() {
             <div>Organism: {species?.name ?? '—'}</div>
             <div>Fitness estimate: {(40 + phenotype.iq * 0.2 + phenotype.muscleMass * 0.15).toFixed(1)}</div>
             <div>Metabolic load: {(30 + phenotype.height * 0.3).toFixed(1)}%</div>
-            <div>Neural complexity: {(phenotype.iq + phenotype.memory + phenotype.attention) / 3 | 0}</div>
+            <div>Cognitive index: {((phenotype.learning + phenotype.memory + phenotype.attention) / 3).toFixed(0)}</div>
             <div className="text-cyan-400/80">Parametric fitness & expression model</div>
           </div>
           {simRunning && (
@@ -1268,7 +1330,7 @@ export function IoModule() {
       body = `>${title}|BioCAD|edits=${edits.length}\n${seq.match(/.{1,80}/g)?.join('\n') ?? seq}\n`
     } else if (format === 'genbank') {
       filename = `${name}_assembly.gb`
-      body = `LOCUS       ${name.toUpperCase()}  2048 bp    DNA     linear\nDEFINITION  ${header} — BioCAD parametric assembly\nACCESSION   BC-${name}\nFEATURES             Location/Qualifiers\n     source          1..2048\n                     /organism="${species?.latin ?? 'synthetic'}"\n     CDS             100..800\n                     /product="phenotype_cassette"\n                     /note="skin=${phenotype.skin};intelligence=${phenotype.iq}"\nORIGIN\n        1 atgccgtaac gttagcgatt ...\n//\n`
+      body = `LOCUS       ${name.toUpperCase()}  2048 bp    DNA     linear\nDEFINITION  ${header} — BioCAD parametric assembly\nACCESSION   BC-${name}\nFEATURES             Location/Qualifiers\n     source          1..2048\n                     /organism="${species?.latin ?? 'synthetic'}"\n     CDS             100..800\n                     /product="phenotype_cassette"\n                     /note="skin=${phenotype.skin};cognitive_profile=encoded"\nORIGIN\n        1 atgccgtaac gttagcgatt ...\n//\n`
     } else {
       filename = `${name}_design.sbol`
       body = `<?xml version="1.0" ?>\n<rdf:RDF xmlns:sbol="http://sbols.org/v2#">\n  <sbol:ComponentDefinition about="http://biocad.studio/${name}">\n    <sbol:displayId>${name}</sbol:displayId>\n    <sbol:name>${header}</sbol:name>\n    <sbol:role>http://identifiers.org/so/SO:0000804</sbol:role>\n  </sbol:ComponentDefinition>\n</rdf:RDF>\n`
@@ -1374,7 +1436,7 @@ export function IoModule() {
             <FileDown className="h-4 w-4" /> Export {format.toUpperCase()}
           </button>
           <div className="mt-3 font-mono text-[10px] text-bio-muted">
-            Target: {species?.name ?? '—'} · {edits.length} edits · intelligence {phenotype.iq}
+            Target: {species?.name ?? '—'} · {edits.length} edits · cognitive profile captured
           </div>
         </div>
       </div>
