@@ -262,6 +262,7 @@ export function SequenceEditor({
   const [nmer, setNmer] = useState('ATCG')
   const [editedPositions, setEditedPositions] = useState<Set<number>>(new Set())
   const [colorWarning, setColorWarning] = useState<string>()
+  const [targetColor, setTargetColor] = useState<string | null>(null)
   const taRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
@@ -278,6 +279,7 @@ export function SequenceEditor({
     setSelEnd(0)
     setEditedPositions(new Set())
     setColorWarning(undefined)
+    setTargetColor(null)
   }, [open, initialSequence, title])
 
   useEffect(() => {
@@ -318,6 +320,7 @@ export function SequenceEditor({
       setSeq(prev)
       setEditedPositions(new Set())
       setColorWarning(undefined)
+      setTargetColor(null)
       return u.slice(0, -1)
     })
   }, [])
@@ -326,10 +329,11 @@ export function SequenceEditor({
     const clean = sanitizeDna(raw)
     pushUndo(seq)
     setSeq(clean)
-    // Clear edit highlights when manually typing
+    // Clear edit highlights and target color when manually typing
     if (clean !== seq) {
       setEditedPositions(new Set())
       setColorWarning(undefined)
+      setTargetColor(null)
     }
   }
 
@@ -427,12 +431,17 @@ export function SequenceEditor({
   const traitType: 'eye' | 'skin' | 'hair' | 'other' = isEyeColor ? 'eye' : isSkinPigment ? 'skin' : isHair ? 'hair' : 'other'
   
   // Compute resulting trait from sequence with proper genetics
-  const resultingColor = useMemo(() => sequenceToColor(seq, traitType), [seq, traitType])
+  // Use target color if user just edited it, otherwise compute from DNA
+  const computedColor = useMemo(() => sequenceToColor(seq, traitType), [seq, traitType])
+  const resultingColor = targetColor || computedColor
   const colorName = useMemo(() => getColorName(resultingColor), [resultingColor])
   
   // Handle color-to-DNA editing
   const handleColorChange = useCallback((newColor: string) => {
     if (traitType === 'other') return // Only pigment traits are editable
+    
+    // Store target color for immediate display
+    setTargetColor(newColor)
     
     pushUndo(seq)
     const { edits, warning } = colorToDnaEdits(newColor, seq, traitType)

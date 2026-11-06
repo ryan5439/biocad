@@ -660,7 +660,7 @@ function BreedAncestryPanel({
 
 export function PhenotypeModule() {
   const { species, phenotype, setPhenotype, edits, finalizeEdits, startPrint } = useStore()
-  const set = (partial: Partial<Phenotype>) => setPhenotype(partial)
+  const set = (partial: Partial<Phenotype>, opts?: { silent?: boolean; label?: string }) => setPhenotype(partial, opts)
   const pending = edits.filter((e) => e.status === 'pending').length
 
   if (!species) {
@@ -678,7 +678,7 @@ export function PhenotypeModule() {
     <Panel title="Phenotype Editor" badge={`${species.name} controls`}>
       <div className="grid h-full gap-4 lg:grid-cols-2">
         <div className="space-y-4">
-          <BreedAncestryPanel speciesId={species.id} onApply={(partial) => set(partial)} />
+          <BreedAncestryPanel speciesId={species.id} onApply={(partial, label) => set(partial, { label })} />
           
           {/* Physical & Biological Traits with Bell Curves */}
           <div className="glass rounded-xl p-4">

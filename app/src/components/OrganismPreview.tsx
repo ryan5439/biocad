@@ -219,8 +219,19 @@ export function OrganismPreview({ compact = false }: { compact?: boolean }) {
     const mount = mountRef.current
     if (!mount || !species) return
 
-    const w = Math.max(mount.clientWidth || 0, compact ? 280 : 320)
-    const h = Math.max(mount.clientHeight || 0, compact ? 160 : 280)
+    // Ensure mount has non-zero dimensions - wait if necessary
+    let w = mount.clientWidth || 0
+    let h = mount.clientHeight || 0
+    
+    // If mount has 0 size, force minimum and schedule reframe
+    if (w === 0 || h === 0) {
+      w = compact ? 280 : 320
+      h = compact ? 160 : 280
+      console.warn('OrganismPreview mount had 0 size, using fallback dimensions')
+    }
+    
+    w = Math.max(w, compact ? 280 : 320)
+    h = Math.max(h, compact ? 160 : 280)
     const scene = new THREE.Scene()
     scene.background = new THREE.Color(0x0a1218)
     scene.fog = new THREE.FogExp2(0x0a1218, 0.018)
@@ -943,12 +954,19 @@ export function OrganismPreview({ compact = false }: { compact?: boolean }) {
       parts.body = fallback
     }
 
-    // Initial frame after mesh build
+    // Initial frame after mesh build - multiple attempts to catch deferred layout
     requestAnimationFrame(() => {
       autoFrameCamera()
-      // Force a render to ensure the canvas isn't blank
       renderer.render(scene, camera)
     })
+    setTimeout(() => {
+      autoFrameCamera()
+      renderer.render(scene, camera)
+    }, 100)
+    setTimeout(() => {
+      autoFrameCamera()
+      renderer.render(scene, camera)
+    }, 300)
 
     // Optional remote GLTF (best-effort; never blocks procedural)
     let gltfRoot: THREE.Object3D | null = null
@@ -1413,8 +1431,10 @@ export function OrganismPreview({ compact = false }: { compact?: boolean }) {
       frame++
       const curPh = stateRef.current.p
       const phChanged = curPh !== lastPhenotype
-      // Heavy phenotype updates: when phenotype ref changes OR every 2nd frame
-      if (phChanged || frame % 2 === 0) {
+      
+      // Only apply phenotype when it actually changes (not every frame)
+      // This prevents expensive mesh updates on every render
+      if (phChanged) {
         try {
           applyPhenotype()
           lastPhenotype = curPh
@@ -1468,19 +1488,32 @@ export function OrganismPreview({ compact = false }: { compact?: boolean }) {
 
     const onResize = () => {
       if (!mount) return
-      const nw = Math.max(mount.clientWidth, 1)
-      const nh = Math.max(mount.clientHeight, 1)
-      camera.aspect = nw / nh
-      camera.updateProjectionMatrix()
-      const cap = compact || nw < 400 ? 1.25 : 1.5
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, cap))
-      renderer.setSize(nw, nh)
+      const nw = Math.max(mount.clientWidth || 1, compact ? 280 : 320, 1)
+      const nh = Math.max(mount.clientHeight || 1, compact ? 160 : 280, 1)
       
-      // Reframe after resize to adapt to new aspect ratio
-      autoFrameCamera()
+      // If dimensions changed significantly or were 0, update everything
+      const prevW = renderer.domElement.width / renderer.getPixelRatio()
+      const prevH = renderer.domElement.height / renderer.getPixelRatio()
+      const sizeChanged = Math.abs(nw - prevW) > 5 || Math.abs(nh - prevH) > 5
       
-      // Force render to ensure non-blank canvas
-      renderer.render(scene, camera)
+      if (sizeChanged || prevW < 10 || prevH < 10) {
+        camera.aspect = nw / nh
+        camera.updateProjectionMatrix()
+        const cap = compact || nw < 400 ? 1.25 : 1.5
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, cap))
+        renderer.setSize(nw, nh)
+        
+        // Reframe after significant resize to adapt to new aspect ratio
+        autoFrameCamera()
+        
+        // Force render to ensure non-blank canvas
+        renderer.render(scene, camera)
+        
+        // Restart animation loop if it was stopped
+        if (!looping && tabVisible && onscreen) {
+          startLoop()
+        }
+      }
     }
     window.addEventListener('resize', onResize)
     const ro = new ResizeObserver(() => onResize())

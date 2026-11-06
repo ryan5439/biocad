@@ -91,7 +91,7 @@ export type AppState = {
   loading: boolean
   loadSpecies: (s: Species) => void
   phenotype: Phenotype
-  setPhenotype: (p: Partial<Phenotype>) => void
+  setPhenotype: (p: Partial<Phenotype>, opts?: { silent?: boolean; label?: string }) => void
   edits: GenomicEdit[]
   finalizeEdits: () => void
   clearEdits: () => void
@@ -262,7 +262,7 @@ export const useStore = create<AppState>((set, get) => ({
     }, 60)
   },
   phenotype: defaultPhenotype(SPECIES[0]),
-  setPhenotype: (partial) => {
+  setPhenotype: (partial, opts = {}) => {
     const prev = get().phenotype
     // Validate and sanitize incoming phenotype data
     const sanitized: Partial<Phenotype> = {}
@@ -279,20 +279,44 @@ export const useStore = create<AppState>((set, get) => ({
     }
     const next = { ...prev, ...sanitized }
     const newEdits: GenomicEdit[] = []
-    for (const key of Object.keys(sanitized) as (keyof Phenotype)[]) {
-      const from = String(prev[key])
-      const to = String(next[key])
-      if (from === to) continue
-      editCounter += 1
-      newEdits.push({
-        id: `edit-${editCounter}`,
-        locus: `synth://${key}@v${editCounter}`,
-        field: fieldLabel(key),
-        from,
-        to,
-        status: 'pending',
-      })
+    
+    // Only record edits if not silent
+    if (!opts.silent) {
+      // If label provided, record one summary edit instead of per-field edits
+      if (opts.label) {
+        const changedKeys = (Object.keys(sanitized) as (keyof Phenotype)[]).filter(
+          key => String(prev[key]) !== String(next[key])
+        )
+        if (changedKeys.length > 0) {
+          editCounter += 1
+          newEdits.push({
+            id: `edit-${editCounter}`,
+            locus: `preset://batch@v${editCounter}`,
+            field: opts.label,
+            from: `${changedKeys.length} fields`,
+            to: 'applied',
+            status: 'pending',
+          })
+        }
+      } else {
+        // Record individual edits for manual changes
+        for (const key of Object.keys(sanitized) as (keyof Phenotype)[]) {
+          const from = String(prev[key])
+          const to = String(next[key])
+          if (from === to) continue
+          editCounter += 1
+          newEdits.push({
+            id: `edit-${editCounter}`,
+            locus: `synth://${key}@v${editCounter}`,
+            field: fieldLabel(key),
+            from,
+            to,
+            status: 'pending',
+          })
+        }
+      }
     }
+    
     set({ phenotype: next, edits: [...get().edits, ...newEdits].slice(-40) })
   },
   edits: [],
